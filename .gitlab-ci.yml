@@ -19,7 +19,16 @@ workflow:
 
 stages:
   - verify
+  - test
+  - secret-detection
   - integration
+
+include:
+  - template: Security/SAST.gitlab-ci.yml
+  - template: Security/Secret-Detection.gitlab-ci.yml
+
+variables:
+  SECRET_DETECTION_ENABLED: 'true'
 
 default:
   image: ubuntu:24.04
@@ -77,3 +86,11 @@ integration:
     - ip6tables -L INPUT -n | grep -q 'policy DROP'
     - ipset list ci_blocklist
     - ipset test ci_blocklist 198.51.100.1
+
+# -- security scanning -------------------------------------------------------
+
+sast:
+  stage: test
+
+secret_detection:
+  stage: secret-detection
