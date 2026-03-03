@@ -1,1 +1,1 @@
-roles/iptables/iptables.md
+iptables.md
