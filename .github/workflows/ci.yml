@@ -1,0 +1,88 @@
+---
+name: CI
+
+on:
+  push:
+    branches: [trunk]
+  pull_request:
+    branches: [trunk]
+
+jobs:
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install ansible-lint
+        run: pip install ansible-core ansible-lint
+
+      - name: Run ansible-lint
+        run: ansible-lint roles/iptables
+
+  unit-tests:
+    name: Unit tests
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install test dependencies
+        run: pip install -r roles/iptables/tests/requirements.txt
+
+      - name: Run pytest
+        run: pytest roles/iptables/tests/ -v
+
+  integration:
+    name: Integration (Ubuntu Noble)
+    runs-on: ubuntu-24.04
+    needs: [lint, unit-tests]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install Ansible
+        run: pip install ansible-core
+
+      - name: Run role — first pass
+        run: >-
+          ansible-playbook
+          -i 'localhost,'
+          --become
+          tests/integration/test.yml
+          -v
+
+      - name: Run role — idempotency check
+        run: |
+          ansible-playbook \
+            -i 'localhost,' \
+            --become \
+            tests/integration/test.yml \
+            | tee /tmp/idempotency.log
+          grep -E '^localhost\s+.*changed=0' /tmp/idempotency.log
+
+      - name: Verify IPv4 policy is DROP
+        run: sudo iptables -L INPUT -n | grep -q 'policy DROP'
+
+      - name: Verify IPv6 policy is DROP
+        run: sudo ip6tables -L INPUT -n | grep -q 'policy DROP'
+
+      - name: Verify ipset set exists
+        run: sudo ipset list ci_blocklist
+
+      - name: Verify ipset entry is present
+        run: sudo ipset test ci_blocklist 198.51.100.1

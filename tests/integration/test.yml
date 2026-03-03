@@ -1,0 +1,36 @@
+---
+# Integration test playbook — run against localhost on the CI runner.
+# Exercises packages, ipset atomic swap, iptables/ip6tables rule application,
+# and the boot-time systemd drop-in (Debian only).
+- hosts: localhost
+  connection: local
+  gather_facts: true
+  become: true
+
+  roles:
+    - role: iptables
+      vars:
+        iptables_open_ports:
+          - { port: 22,  proto: tcp }
+          - { port: 80,  proto: tcp }
+          - { port: 443, proto: tcp }
+
+        iptables_ipsets:
+          - name: ci_blocklist
+            type: hash:ip
+            family: inet
+            entries:
+              - 198.51.100.1
+              - 203.0.113.0/24
+            match:
+              target: DROP
+
+          - name: ci_allowlist
+            type: hash:ip
+            family: inet
+            entries:
+              - 192.0.2.10
+            match:
+              proto: tcp
+              ports: [8080]
+              target: ACCEPT

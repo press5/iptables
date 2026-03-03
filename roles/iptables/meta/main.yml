@@ -1,0 +1,32 @@
+---
+galaxy_info:
+  role_name: iptables
+  author: "jkl <jkl@jkl.dev>"
+  description: Manage iptables/ip6tables rules and ipset sets.
+  license: MIT
+  min_ansible_version: "2.12"
+  platforms:
+    - name: Debian
+      versions:
+        - bullseye
+        - bookworm
+    - name: Ubuntu
+      versions:
+        - focal
+        - jammy
+        - noble
+    - name: EL
+      versions:
+        - "8"
+        - "9"
+    - name: Fedora
+      versions:
+        - all
+  galaxy_tags:
+    - networking
+    - security
+    - firewall
+    - iptables
+    - ipset
+
+dependencies: []

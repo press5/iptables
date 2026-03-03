@@ -1,0 +1,66 @@
+---
+iptables_manage_packages: true
+iptables_service_enabled: true
+iptables_force_reload: false
+iptables_backup_rules: true
+
+# Convenience port-opening (generates -A INPUT rules in filter table)
+# Applied to both IPv4 + IPv6
+iptables_open_ports: []
+# Format: { port: 22, proto: tcp } or { port: 53, proto: udp }
+
+# IPv4 only
+iptables_v4_open_ports: []
+
+# IPv6 only
+iptables_v6_open_ports: []
+
+# Per-table rules in iptables-restore format
+iptables_v4_tables:
+  filter:
+    policies:
+      INPUT: DROP
+      FORWARD: DROP
+      OUTPUT: ACCEPT
+    chains: []
+    rules:
+      - "-A INPUT -i lo -s 127.0.0.0/8 -j ACCEPT"
+      - "-A INPUT ! -i lo -s 127.0.0.0/8 -j DROP"
+      - "-A INPUT -m conntrack --ctstate INVALID -j DROP"
+      - "-A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT"
+      - "-A INPUT -p icmp --icmp-type echo-request -j ACCEPT"
+
+iptables_v6_tables:
+  filter:
+    policies:
+      INPUT: DROP
+      FORWARD: DROP
+      OUTPUT: ACCEPT
+    chains: []
+    rules:
+      - "-A INPUT -i lo -s ::1 -j ACCEPT"
+      - "-A INPUT ! -i lo -s ::1 -j DROP"
+      - "-A INPUT -m conntrack --ctstate INVALID -j DROP"
+      - "-A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT"
+      - "-A INPUT -p ipv6-icmp -j ACCEPT"
+
+# ipset sets
+# Example entry:
+#   - name: blocklist
+#     type: hash:ip          # any valid ipset type
+#     family: inet           # inet or inet6 (optional; not all types support it)
+#     hashsize: 4096         # optional
+#     maxelem: 131072        # optional
+#     timeout: 0             # optional (seconds; 0 = no expiry)
+#     comment: true          # optional; enables per-entry comments
+#     entries:
+#       - 192.0.2.1
+#       - 198.51.100.0/24
+#     match:                       # optional: auto-generate iptables rules for this set
+#       chain: INPUT               # INPUT, FORWARD, OUTPUT; default: INPUT
+#       direction: src             # src or dst; default: src
+#       proto: tcp                 # tcp, udp, both; omit for protocol-independent match
+#       ports: [80, 443]           # optional; single uses --dport, multiple uses -m multiport --dports
+#       target: DROP               # ACCEPT, DROP, REJECT; default: ACCEPT
+#       ipversion: [4, 6]          # optional; inferred from set family (inet→[4], inet6→[6]) if omitted
+iptables_ipsets: []

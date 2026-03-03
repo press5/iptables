@@ -1,0 +1,63 @@
+# Managed by Ansible — do not edit manually
+{% set _table_order = ['raw', 'mangle', 'nat', 'filter'] %}
+{% for table_name in _table_order %}
+{% if table_name in iptables_v6_tables %}
+{% set table = iptables_v6_tables[table_name] %}
+*{{ table_name }}
+{% for chain, policy in (table.policies | default({})).items() %}
+:{{ chain }} {{ policy }} [0:0]
+{% endfor %}
+{% for chain in table.chains | default([]) %}
+:{{ chain }} - [0:0]
+{% endfor %}
+{% for rule in table.rules | default([]) %}
+{{ rule }}
+{% endfor %}
+{% if table_name == 'filter' %}
+{% for item in iptables_open_ports + iptables_v6_open_ports %}
+-A INPUT -p {{ item.proto }} --dport {{ item.port }} -j ACCEPT
+{% endfor %}
+{% for _set in iptables_ipsets %}
+{% if _set.match is defined %}
+{% set m = _set.match %}
+{% if m.ipversion is defined %}
+{% set _ipv_list = m.ipversion if (m.ipversion is sequence and m.ipversion is not string) else [m.ipversion] %}
+{% set _applies = 6 in _ipv_list %}
+{% elif _set.family is defined %}
+{% set _applies = _set.family == 'inet6' %}
+{% else %}
+{% set _applies = true %}
+{% endif %}
+{% if _applies %}
+{% set _chain = m.chain | default('INPUT') %}
+{% set _dir = m.direction | default('src') %}
+{% set _target = m.target | default('ACCEPT') %}
+{% if m.proto is defined and m.proto == 'both' %}
+{% set _protos = ['tcp', 'udp'] %}
+{% elif m.proto is defined %}
+{% set _protos = [m.proto] %}
+{% elif m.ports is defined %}
+{% set _protos = ['tcp'] %}
+{% else %}
+{% set _protos = [none] %}
+{% endif %}
+{% for _proto in _protos %}
+{% set ns = namespace(parts=['-A', _chain]) %}
+{% if _proto is not none %}{% set ns.parts = ns.parts + ['-p', _proto] %}{% endif %}
+{% if m.ports is defined %}
+{% if m.ports | length > 1 %}
+{% set ns.parts = ns.parts + ['-m', 'multiport', '--dports', m.ports | map('string') | join(',')] %}
+{% else %}
+{% set ns.parts = ns.parts + ['--dport', m.ports[0] | string] %}
+{% endif %}
+{% endif %}
+{% set ns.parts = ns.parts + ['-m', 'set', '--match-set', _set.name, _dir, '-j', _target] %}
+{{ ns.parts | join(' ') }}
+{% endfor %}
+{% endif %}
+{% endif %}
+{% endfor %}
+{% endif %}
+COMMIT
+{% endif %}
+{% endfor %}

@@ -1,0 +1,79 @@
+---
+# Mirrors the GitHub Actions CI: lint and unit-tests run in parallel, then
+# integration runs only if both pass.
+#
+# Integration notes:
+#   - Requires a runner with privileged mode for kernel netfilter access
+#     (iptables/ipset). Tag your runner with 'privileged', or adjust the tag
+#     below to match your runner configuration.
+#   - iptables_service_enabled is forced to false because Docker containers
+#     don't run systemd as PID 1. All iptables and ipset functionality is
+#     still exercised; only the boot-time service enable is skipped.
+#   - For full service-management testing (netfilter-persistent, ip6tables),
+#     use a self-hosted VM runner with a shell executor instead.
+
+workflow:
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "trunk" && $CI_PIPELINE_SOURCE == "push"'
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "trunk"'
+
+stages:
+  - verify
+  - integration
+
+default:
+  image: ubuntu:24.04
+
+# -- lint and unit-tests run in parallel (same stage) ----------------------
+
+lint:
+  stage: verify
+  before_script:
+    - apt-get update -qq
+    - apt-get install -y --no-install-recommends python3-pip
+    - pip3 install --quiet ansible-core ansible-lint
+  script:
+    - ansible-lint roles/iptables
+
+unit-tests:
+  stage: verify
+  before_script:
+    - apt-get update -qq
+    - apt-get install -y --no-install-recommends python3-pip
+    - pip3 install --quiet -r roles/iptables/tests/requirements.txt
+  script:
+    - pytest roles/iptables/tests/ -v
+
+# -- integration ------------------------------------------------------------
+
+integration:
+  stage: integration
+  needs: [lint, unit-tests]
+  tags:
+    - privileged
+  before_script:
+    - apt-get update -qq
+    - apt-get install -y --no-install-recommends python3-pip sudo
+    - pip3 install --quiet ansible-core
+  script:
+    - >-
+      ansible-playbook
+      -i 'localhost,'
+      --become
+      -e iptables_service_enabled=false
+      tests/integration/test.yml
+      -v
+
+    - |
+      ansible-playbook \
+        -i 'localhost,' \
+        --become \
+        -e iptables_service_enabled=false \
+        tests/integration/test.yml \
+        | tee /tmp/idempotency.log
+      grep -E '^localhost\s+.*changed=0' /tmp/idempotency.log
+
+    - iptables  -L INPUT -n | grep -q 'policy DROP'
+    - ip6tables -L INPUT -n | grep -q 'policy DROP'
+    - ipset list ci_blocklist
+    - ipset test ci_blocklist 198.51.100.1

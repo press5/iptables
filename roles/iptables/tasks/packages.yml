@@ -1,0 +1,57 @@
+---
+- name: Install iptables and persistence packages
+  ansible.builtin.package:
+    name: "{{ iptables_packages }}"
+    state: present
+
+# Debian keeps rules under /etc/iptables/ which does not exist by default.
+# On RedHat, /etc/sysconfig/ is part of the base filesystem — iptables_rules_dir is
+# set to "" in vars/RedHat.yml so this task is skipped there.
+- name: Create iptables rules directory
+  ansible.builtin.file:
+    path: "{{ iptables_rules_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0700"
+  when: (iptables_rules_dir | default('')) | length > 0
+
+- name: Enable primary firewall service
+  ansible.builtin.service:
+    name: "{{ iptables_service_name }}"
+    enabled: "{{ iptables_service_enabled }}"
+
+# On RedHat, ip6tables is a separate service from iptables.
+# iptables_extra_services: [ip6tables] in vars/RedHat.yml; [] on Debian.
+- name: Enable additional firewall services
+  ansible.builtin.service:
+    name: "{{ item }}"
+    enabled: "{{ iptables_service_enabled }}"
+  loop: "{{ iptables_extra_services | default([]) }}"
+
+# On Debian/Ubuntu, iptables-persistent plugins (15-ip4tables, 15-ip6tables) load
+# before the ipset-persistent plugin (25-ipset). When iptables rules reference ipset
+# sets, the load fails on boot. The drop-in below restores ipsets via ExecStartPre
+# so they exist before any plugin runs.
+# On RedHat, ipset.service already declares Before=iptables.service in its unit file,
+# so no drop-in is needed.
+- name: Create systemd drop-in directory for netfilter-persistent
+  ansible.builtin.file:
+    path: /etc/systemd/system/netfilter-persistent.service.d
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  when: iptables_ipsets | length > 0 and ansible_facts['os_family'] == 'Debian'
+
+- name: Install systemd drop-in to restore ipsets before iptables on boot
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/netfilter-persistent.service.d/ipset-first.conf
+    content: |
+      [Service]
+      ExecStartPre=/bin/sh -c 'test -f /etc/ipset.conf && ipset restore -! < /etc/ipset.conf || true'
+    owner: root
+    group: root
+    mode: "0644"
+  when: iptables_ipsets | length > 0 and ansible_facts['os_family'] == 'Debian'
+  notify: reload systemd daemon

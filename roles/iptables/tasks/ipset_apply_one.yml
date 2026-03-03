@@ -1,0 +1,41 @@
+---
+- name: "ipset | create tmp set for {{ _ipset.name }}"
+  ansible.builtin.shell: >-
+    ipset create -exist {{ _ipset.name }}-tmp
+    {{ _ipset.type }}
+    {{ 'family ' + _ipset.family if _ipset.family is defined else '' }}
+    {{ 'hashsize ' + (_ipset.hashsize | string) if _ipset.hashsize is defined else '' }}
+    {{ 'maxelem ' + (_ipset.maxelem | string) if _ipset.maxelem is defined else '' }}
+    {{ 'timeout ' + (_ipset.timeout | string) if _ipset.timeout is defined else '' }}
+    {{ 'comment' if _ipset.comment is defined and _ipset.comment else '' }}
+  changed_when: false
+
+- name: "ipset | flush tmp set {{ _ipset.name }}-tmp"
+  ansible.builtin.command: ipset flush {{ _ipset.name }}-tmp
+  changed_when: false
+
+- name: "ipset | populate tmp set {{ _ipset.name }}-tmp"
+  ansible.builtin.command: ipset add {{ _ipset.name }}-tmp {{ entry }}
+  loop: "{{ _ipset.entries | default([]) }}"
+  loop_control:
+    loop_var: entry
+  changed_when: false
+
+- name: "ipset | create live set {{ _ipset.name }} (if not exists)"
+  ansible.builtin.shell: >-
+    ipset create -exist {{ _ipset.name }}
+    {{ _ipset.type }}
+    {{ 'family ' + _ipset.family if _ipset.family is defined else '' }}
+    {{ 'hashsize ' + (_ipset.hashsize | string) if _ipset.hashsize is defined else '' }}
+    {{ 'maxelem ' + (_ipset.maxelem | string) if _ipset.maxelem is defined else '' }}
+    {{ 'timeout ' + (_ipset.timeout | string) if _ipset.timeout is defined else '' }}
+    {{ 'comment' if _ipset.comment is defined and _ipset.comment else '' }}
+  changed_when: false
+
+- name: "ipset | swap {{ _ipset.name }}-tmp into {{ _ipset.name }}"
+  ansible.builtin.command: ipset swap {{ _ipset.name }}-tmp {{ _ipset.name }}
+  changed_when: true
+
+- name: "ipset | destroy tmp set {{ _ipset.name }}-tmp"
+  ansible.builtin.command: ipset destroy {{ _ipset.name }}-tmp
+  changed_when: false

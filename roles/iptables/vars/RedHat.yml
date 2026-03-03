@@ -1,0 +1,14 @@
+---
+iptables_v4_rules_path: /etc/sysconfig/iptables
+iptables_v6_rules_path: /etc/sysconfig/ip6tables
+iptables_ipset_save_path: /etc/sysconfig/ipset
+iptables_packages:
+  - iptables-services
+  - ipset
+  - ipset-service
+iptables_service_name: iptables
+# /etc/sysconfig/ is part of the base filesystem on RHEL — no creation needed
+iptables_rules_dir: ""
+# ip6tables is a separate service on RHEL; iptables_service_name covers only IPv4
+iptables_extra_services:
+  - ip6tables

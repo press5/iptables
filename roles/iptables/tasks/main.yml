@@ -1,0 +1,15 @@
+---
+- name: Load OS-specific variables
+  ansible.builtin.include_vars: "{{ ansible_facts['os_family'] }}.yml"
+  failed_when: false
+
+- name: Manage packages and directories
+  ansible.builtin.include_tasks: packages.yml
+  when: iptables_manage_packages
+
+- name: Manage ipset sets
+  ansible.builtin.include_tasks: ipset.yml
+  when: iptables_ipsets | length > 0
+
+- name: Manage iptables rules
+  ansible.builtin.include_tasks: iptables.yml

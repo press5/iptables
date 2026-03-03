@@ -1,0 +1,25 @@
+---
+- name: Write ipset configuration file
+  ansible.builtin.template:
+    src: ipset.conf.j2
+    dest: "{{ iptables_ipset_save_path }}"
+    owner: root
+    group: root
+    mode: "0600"
+    backup: "{{ iptables_backup_rules }}"
+  register: _ipset_config
+
+- name: List currently loaded ipset sets
+  ansible.builtin.command: ipset list -name
+  register: _ipset_loaded
+  changed_when: false
+
+- name: Apply ipset sets atomically
+  ansible.builtin.include_tasks: ipset_apply_one.yml
+  loop: "{{ iptables_ipsets }}"
+  loop_control:
+    loop_var: _ipset
+  when: >-
+    _ipset_config.changed or
+    iptables_force_reload or
+    _ipset.name not in (_ipset_loaded.stdout_lines | default([]))

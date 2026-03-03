@@ -1,0 +1,14 @@
+---
+iptables_v4_rules_path: /etc/iptables/rules.v4
+iptables_v6_rules_path: /etc/iptables/rules.v6
+iptables_ipset_save_path: /etc/ipset.conf
+iptables_packages:
+  - iptables
+  - ipset
+  - netfilter-persistent
+  - iptables-persistent
+  - ipset-persistent
+iptables_service_name: netfilter-persistent
+# /etc/iptables/ must be created; netfilter-persistent is the only service needed
+iptables_rules_dir: /etc/iptables
+iptables_extra_services: []

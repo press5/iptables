@@ -1,0 +1,21 @@
+---
+- name: Restore iptables rules
+  ansible.builtin.command: >-
+    iptables-restore {{ iptables_v4_rules_path }}
+  listen: restore iptables
+
+- name: Restore ip6tables rules
+  ansible.builtin.command: >-
+    ip6tables-restore {{ iptables_v6_rules_path }}
+  listen: restore ip6tables
+
+- name: Restore all netfilter rules
+  ansible.builtin.service:
+    name: "{{ iptables_service_name }}"
+    state: restarted
+  listen: restore netfilter
+
+- name: Reload systemd daemon
+  ansible.builtin.systemd:
+    daemon_reload: true
+  listen: reload systemd daemon

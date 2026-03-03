@@ -1,0 +1,14 @@
+# Managed by Ansible — do not edit manually
+# Used by ipset-persistent for boot-time restore
+{% for set in iptables_ipsets %}
+create -exist {{ set.name }} {{ ([set.type]
+  + (['family', set.family] if set.family is defined else [])
+  + (['hashsize', set.hashsize | string] if set.hashsize is defined else [])
+  + (['maxelem', set.maxelem | string] if set.maxelem is defined else [])
+  + (['timeout', set.timeout | string] if set.timeout is defined else [])
+  + (['comment'] if set.comment is defined and set.comment else [])
+) | join(' ') }}
+{% for entry in set.entries | default([]) %}
+add -exist {{ set.name }} {{ entry }}
+{% endfor %}
+{% endfor %}
