@@ -14,8 +14,8 @@
 
 workflow:
   rules:
-    - if: '$CI_COMMIT_BRANCH == "trunk" && $CI_PIPELINE_SOURCE == "push"'
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "trunk"'
+    - if: '$CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE == "push"'
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "main"'
 
 stages:
   - verify
@@ -40,7 +40,7 @@ lint:
   before_script:
     - apt-get update -qq
     - apt-get install -y --no-install-recommends python3-pip
-    - pip3 install --quiet ansible-core ansible-lint
+    - pip3 install --quiet --break-system-packages ansible-core ansible-lint
   script:
     - ansible-lint roles/iptables
 
@@ -49,7 +49,7 @@ unit-tests:
   before_script:
     - apt-get update -qq
     - apt-get install -y --no-install-recommends python3-pip
-    - pip3 install --quiet -r roles/iptables/tests/requirements.txt
+    - pip3 install --quiet --break-system-packages -r roles/iptables/tests/requirements.txt
   script:
     - pytest roles/iptables/tests/ -v
 
@@ -63,7 +63,7 @@ integration:
   before_script:
     - apt-get update -qq
     - apt-get install -y --no-install-recommends python3-pip sudo
-    - pip3 install --quiet ansible-core
+    - pip3 install --quiet --break-system-packages ansible-core
   script:
     - >-
       ansible-playbook
