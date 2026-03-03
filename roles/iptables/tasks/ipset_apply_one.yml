@@ -1,5 +1,5 @@
 ---
-- name: "ipset | create tmp set for {{ _ipset.name }}"
+- name: "Ipset | create tmp set for {{ _ipset.name }}"
   ansible.builtin.shell: >-
     ipset create -exist {{ _ipset.name }}-tmp
     {{ _ipset.type }}
@@ -10,18 +10,18 @@
     {{ 'comment' if _ipset.comment is defined and _ipset.comment else '' }}
   changed_when: false
 
-- name: "ipset | flush tmp set {{ _ipset.name }}-tmp"
+- name: "Ipset | flush tmp set {{ _ipset.name ~ '-tmp' }}"
   ansible.builtin.command: ipset flush {{ _ipset.name }}-tmp
   changed_when: false
 
-- name: "ipset | populate tmp set {{ _ipset.name }}-tmp"
+- name: "Ipset | populate tmp set {{ _ipset.name ~ '-tmp' }}"
   ansible.builtin.command: ipset add {{ _ipset.name }}-tmp {{ entry }}
   loop: "{{ _ipset.entries | default([]) }}"
   loop_control:
     loop_var: entry
   changed_when: false
 
-- name: "ipset | create live set {{ _ipset.name }} (if not exists)"
+- name: "Ipset | create live set (if not exists) {{ _ipset.name }}"
   ansible.builtin.shell: >-
     ipset create -exist {{ _ipset.name }}
     {{ _ipset.type }}
@@ -32,10 +32,10 @@
     {{ 'comment' if _ipset.comment is defined and _ipset.comment else '' }}
   changed_when: false
 
-- name: "ipset | swap {{ _ipset.name }}-tmp into {{ _ipset.name }}"
+- name: "Ipset | swap tmp into {{ _ipset.name }}"
   ansible.builtin.command: ipset swap {{ _ipset.name }}-tmp {{ _ipset.name }}
   changed_when: true
 
-- name: "ipset | destroy tmp set {{ _ipset.name }}-tmp"
+- name: "Ipset | destroy tmp set {{ _ipset.name ~ '-tmp' }}"
   ansible.builtin.command: ipset destroy {{ _ipset.name }}-tmp
   changed_when: false

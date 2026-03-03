@@ -7,11 +7,11 @@
     group: root
     mode: "0600"
     backup: "{{ iptables_backup_rules }}"
-  register: _ipset_config
+  register: iptables_ipset_config
 
 - name: List currently loaded ipset sets
   ansible.builtin.command: ipset list -name
-  register: _ipset_loaded
+  register: iptables_ipset_loaded
   changed_when: false
 
 - name: Apply ipset sets atomically
@@ -20,6 +20,6 @@
   loop_control:
     loop_var: _ipset
   when: >-
-    _ipset_config.changed or
+    iptables_ipset_config.changed or
     iptables_force_reload or
-    _ipset.name not in (_ipset_loaded.stdout_lines | default([]))
+    _ipset.name not in (iptables_ipset_loaded.stdout_lines | default([]))
