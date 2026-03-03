@@ -19,4 +19,4 @@
   ansible.builtin.systemd:
     daemon_reload: true
   listen: reload systemd daemon
-  when: ansible_service_mgr == 'systemd'
+  when: ansible_facts['service_mgr'] == 'systemd'
