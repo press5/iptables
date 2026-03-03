@@ -58,8 +58,6 @@ unit-tests:
 integration:
   stage: integration
   needs: [lint, unit-tests]
-  tags:
-    - privileged
   before_script:
     - apt-get update -qq
     - apt-get install -y --no-install-recommends python3-pip sudo
