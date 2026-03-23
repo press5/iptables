@@ -335,3 +335,72 @@ class TestIpsetConf:
     def test_empty_ipsets_produces_no_create_lines(self, render_ipset):
         out = render_ipset(iptables_ipsets=[])
         assert "create" not in out
+
+
+# ---------------------------------------------------------------------------
+# Drop logging
+# ---------------------------------------------------------------------------
+
+
+class TestDropLogging:
+    def test_log_disabled_by_default(self, render_v4):
+        out = render_v4()
+        assert "-j LOG" not in out
+
+    def test_log_enabled_v4(self, render_v4):
+        out = render_v4(iptables_log_enable=True)
+        assert "-j LOG" in out
+
+    def test_log_enabled_v6(self, render_v6):
+        out = render_v6(iptables_log_enable=True)
+        assert "-j LOG" in out
+
+    def test_log_rules_for_drop_chains_only(self, render_v4):
+        out = render_v4(iptables_log_enable=True)
+        lines = [l for l in out.splitlines() if "-j LOG" in l]
+        # Default policies: INPUT DROP, FORWARD DROP, OUTPUT ACCEPT
+        chains = {l.split()[1] for l in lines}
+        assert "INPUT" in chains
+        assert "FORWARD" in chains
+        assert "OUTPUT" not in chains
+
+    def test_log_uses_default_prefix(self, render_v4):
+        out = render_v4(iptables_log_enable=True)
+        assert '--log-prefix "iptables-drop: "' in out
+
+    def test_log_custom_prefix(self, render_v4):
+        out = render_v4(iptables_log_enable=True, iptables_log_prefix="fw: ")
+        assert '--log-prefix "fw: "' in out
+        assert "iptables-drop" not in out
+
+    def test_log_uses_default_limit(self, render_v4):
+        out = render_v4(iptables_log_enable=True)
+        assert "--limit 5/min" in out
+
+    def test_log_custom_limit(self, render_v4):
+        out = render_v4(iptables_log_enable=True, iptables_log_limit="1/sec")
+        assert "--limit 1/sec" in out
+
+    def test_log_rules_appear_after_open_ports_and_ipset(self, render_v4):
+        out = render_v4(
+            iptables_log_enable=True,
+            iptables_open_ports=[{"port": 22, "proto": "tcp"}],
+            iptables_ipsets=[
+                {"name": "bl", "type": "hash:ip", "entries": [], "match": {"target": "DROP"}}
+            ],
+        )
+        port_pos = out.index("--dport 22")
+        ipset_pos = out.index("--match-set bl")
+        log_pos = out.index("-j LOG")
+        assert log_pos > port_pos
+        assert log_pos > ipset_pos
+
+    def test_log_absent_when_no_drop_policies(self, render_v4):
+        tables = {
+            "filter": {
+                "policies": {"INPUT": "ACCEPT", "FORWARD": "ACCEPT", "OUTPUT": "ACCEPT"},
+                "rules": [],
+            }
+        }
+        out = render_v4(iptables_log_enable=True, iptables_v4_tables=tables)
+        assert "-j LOG" not in out

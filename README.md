@@ -25,6 +25,9 @@ Manages iptables/ip6tables firewall rules and ipset sets on Debian/Ubuntu and Re
 | `iptables_service_enabled` | `true` | Enable the firewall service(s) at boot |
 | `iptables_force_reload` | `false` | Re-apply rules/sets even when unchanged |
 | `iptables_backup_rules` | `true` | Back up rules.v4, rules.v6, and ipset.conf before overwriting. Backups are written to the same directory with a timestamp suffix (e.g. `rules.v4.2025-03-02@14:23:01~`) |
+| `iptables_log_enable` | `false` | Append a rate-limited `LOG` rule to every filter chain whose default policy is `DROP`, just before the policy fires |
+| `iptables_log_prefix` | `"iptables-drop: "` | Kernel log prefix string passed to `--log-prefix` |
+| `iptables_log_limit` | `"5/min"` | Rate limit passed to `-m limit --limit` (prevents log flooding) |
 
 ### Convenience port-opening
 
@@ -137,7 +140,7 @@ pip install -r requirements.txt
 pytest -v
 ```
 
-The suite covers filter table structure, table render ordering, open-port scoping (v4/v6/both), ipset match rule generation (`--dport`, multiport, `proto: both`, direction, chain, target), IP-version scoping (`family`, `ipversion` override), and `ipset.conf` rendering.
+The suite covers filter table structure, table render ordering, open-port scoping (v4/v6/both), ipset match rule generation (`--dport`, multiport, `proto: both`, direction, chain, target), IP-version scoping (`family`, `ipversion` override), `ipset.conf` rendering, and drop logging (`iptables_log_enable`, prefix, limit, ordering).
 
 ## Example playbook
 
@@ -235,6 +238,23 @@ iptables_v4_tables:
       - "-A LOGDROP -j DROP"
       - "-A INPUT -j LOGDROP"
 ```
+
+### Log dropped packets
+
+```yaml
+iptables_log_enable: true
+iptables_log_prefix: "iptables-drop: "   # optional, this is the default
+iptables_log_limit: "5/min"              # optional, this is the default
+```
+
+This appends a rule like the following to each filter chain with a `DROP` policy (by default `INPUT` and `FORWARD`):
+
+```
+-A INPUT   -m limit --limit 5/min -j LOG --log-prefix "iptables-drop: "
+-A FORWARD -m limit --limit 5/min -j LOG --log-prefix "iptables-drop: "
+```
+
+Packets then continue to the chain policy and are dropped as normal. The rate limit prevents the kernel log from being flooded by a scan or burst of traffic.
 
 ### Block a dynamic IP list with ipset
 

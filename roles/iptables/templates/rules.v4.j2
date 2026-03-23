@@ -57,6 +57,13 @@
 {% endif %}
 {% endif %}
 {% endfor %}
+{% if iptables_log_enable %}
+{% for chain, policy in (table.policies | default({})).items() %}
+{% if policy == 'DROP' %}
+-A {{ chain }} -m limit --limit {{ iptables_log_limit }} -j LOG --log-prefix "{{ iptables_log_prefix }}"
+{% endif %}
+{% endfor %}
+{% endif %}
 {% endif %}
 COMMIT
 {% endif %}

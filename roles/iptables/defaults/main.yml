@@ -3,6 +3,9 @@ iptables_manage_packages: true
 iptables_service_enabled: true
 iptables_force_reload: false
 iptables_backup_rules: true
+iptables_log_enable: false
+iptables_log_prefix: "iptables-drop: "
+iptables_log_limit: "5/min"
 
 # Convenience port-opening (generates -A INPUT rules in filter table)
 # Applied to both IPv4 + IPv6
