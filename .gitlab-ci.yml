@@ -69,7 +69,7 @@ molecule:
     DOCKER_TLS_CERTDIR: ""
   before_script:
     - apt-get update -qq
-    - apt-get install -y --no-install-recommends docker.io
+    - apt-get install -y --no-install-recommends docker.io docker-cli
     - pip install --quiet -r molecule-requirements.txt
     - ansible-galaxy collection install community.docker
   script:
