@@ -3,44 +3,49 @@
   hosts: all
   become: true
   tasks:
-    - name: rules.v4 exists
+    - name: Check rules.v4 exists
       ansible.builtin.stat:
         path: /etc/iptables/rules.v4
-      register: v4
-    - ansible.builtin.assert:
-        that: v4.stat.exists
+      register: iptables_v4_stat
+    - name: Assert rules.v4 is present
+      ansible.builtin.assert:
+        that: iptables_v4_stat.stat.exists
         fail_msg: "/etc/iptables/rules.v4 was not created"
 
-    - name: rules.v6 exists
+    - name: Check rules.v6 exists
       ansible.builtin.stat:
         path: /etc/iptables/rules.v6
-      register: v6
-    - ansible.builtin.assert:
-        that: v6.stat.exists
+      register: iptables_v6_stat
+    - name: Assert rules.v6 is present
+      ansible.builtin.assert:
+        that: iptables_v6_stat.stat.exists
         fail_msg: "/etc/iptables/rules.v6 was not created"
 
-    - name: netfilter-persistent is enabled
+    - name: Check netfilter-persistent service state
       ansible.builtin.systemd:
         name: netfilter-persistent
-      register: svc
-    - ansible.builtin.assert:
-        that: svc.status.UnitFileState == 'enabled'
-        fail_msg: "netfilter-persistent is not enabled (state: {{ svc.status.UnitFileState }})"
+      register: iptables_svc
+    - name: Assert netfilter-persistent is enabled
+      ansible.builtin.assert:
+        that: iptables_svc.status.UnitFileState == 'enabled'
+        fail_msg: "netfilter-persistent is not enabled (state: {{ iptables_svc.status.UnitFileState }})"
 
-    - name: systemd drop-in is absent when iptables_ipsets is empty
+    - name: Check systemd drop-in is absent when iptables_ipsets is empty
       ansible.builtin.stat:
         path: /etc/systemd/system/netfilter-persistent.service.d/ipset-first.conf
-      register: dropin
-    - ansible.builtin.assert:
-        that: not dropin.stat.exists
+      register: iptables_dropin
+    - name: Assert drop-in is absent
+      ansible.builtin.assert:
+        that: not iptables_dropin.stat.exists
         fail_msg: >
           drop-in ipset-first.conf is present despite iptables_ipsets being empty.
           This is the stale-artifact bug fixed in 1.1.0.
 
-    - name: No role-managed ipsets are loaded in kernel
+    - name: List currently loaded ipsets
       ansible.builtin.command: ipset list
-      register: ipset_out
+      register: iptables_ipset_out
       changed_when: false
-    - ansible.builtin.assert:
-        that: "'blocklist' not in ipset_out.stdout"
+    - name: Assert no role-managed ipsets are loaded in kernel
+      ansible.builtin.assert:
+        that: "'blocklist' not in iptables_ipset_out.stdout"
         fail_msg: "blocklist ipset found in kernel despite iptables_ipsets being empty"

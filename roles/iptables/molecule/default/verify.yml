@@ -3,44 +3,48 @@
   hosts: all
   become: true
   tasks:
-    - name: rules.v4 exists
+    - name: Check rules.v4 exists
       ansible.builtin.stat:
         path: /etc/iptables/rules.v4
-      register: v4
-    - ansible.builtin.assert:
-        that: v4.stat.exists
+      register: iptables_v4_stat
+    - name: Assert rules.v4 is present
+      ansible.builtin.assert:
+        that: iptables_v4_stat.stat.exists
         fail_msg: "/etc/iptables/rules.v4 was not created"
 
-    - name: rules.v6 exists
+    - name: Check rules.v6 exists
       ansible.builtin.stat:
         path: /etc/iptables/rules.v6
-      register: v6
-    - ansible.builtin.assert:
-        that: v6.stat.exists
+      register: iptables_v6_stat
+    - name: Assert rules.v6 is present
+      ansible.builtin.assert:
+        that: iptables_v6_stat.stat.exists
         fail_msg: "/etc/iptables/rules.v6 was not created"
 
-    - name: netfilter-persistent is enabled
+    - name: Check netfilter-persistent service state
       ansible.builtin.systemd:
         name: netfilter-persistent
-      register: svc
-    - ansible.builtin.assert:
-        that: svc.status.UnitFileState == 'enabled'
-        fail_msg: "netfilter-persistent is not enabled (state: {{ svc.status.UnitFileState }})"
+      register: iptables_svc
+    - name: Assert netfilter-persistent is enabled
+      ansible.builtin.assert:
+        that: iptables_svc.status.UnitFileState == 'enabled'
+        fail_msg: "netfilter-persistent is not enabled (state: {{ iptables_svc.status.UnitFileState }})"
 
-    - name: blocklist ipset is loaded in kernel
+    - name: Verify blocklist ipset is loaded in kernel
       ansible.builtin.command: ipset list blocklist
       changed_when: false
 
-    - name: 192.0.2.1 is a member of the live blocklist set
+    - name: Verify 192.0.2.1 is a member of the live blocklist set
       ansible.builtin.command: ipset test blocklist 192.0.2.1
       changed_when: false
 
-    - name: systemd drop-in exists when ipsets are defined
+    - name: Check systemd drop-in exists when ipsets are defined
       ansible.builtin.stat:
         path: /etc/systemd/system/netfilter-persistent.service.d/ipset-first.conf
-      register: dropin
-    - ansible.builtin.assert:
-        that: dropin.stat.exists
+      register: iptables_dropin
+    - name: Assert drop-in is present
+      ansible.builtin.assert:
+        that: iptables_dropin.stat.exists
         fail_msg: "drop-in ipset-first.conf is missing despite iptables_ipsets being non-empty"
 
     - name: Verify blocklist DROP precedes port 22 ACCEPT in kernel
@@ -52,9 +56,10 @@
         test "$ipset_line" -lt "$port_line"
       changed_when: false
       failed_when: false
-      register: ordering_check
-    - ansible.builtin.assert:
-        that: ordering_check.rc == 0
+      register: iptables_ordering_check
+    - name: Assert blocklist DROP precedes port 22 ACCEPT
+      ansible.builtin.assert:
+        that: iptables_ordering_check.rc == 0
         fail_msg: >
           Kernel rule ordering violation: --match-set blocklist DROP does not
           precede --dport 22 ACCEPT in iptables-save output. A blocklisted IP
