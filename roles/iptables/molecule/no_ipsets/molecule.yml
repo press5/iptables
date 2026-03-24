@@ -24,14 +24,15 @@ provisioner:
   name: ansible
   env:
     ANSIBLE_ROLES_PATH: "${MOLECULE_PROJECT_DIRECTORY}/.."
-    DOCKER_HOST: "${DOCKER_HOST:-unix:///var/run/docker.sock}"
   inventory:
     host_vars:
       debian12:
         ansible_connection: community.docker.docker_api
+        ansible_docker_host: "{{ lookup('env', 'DOCKER_HOST') | default('unix:///var/run/docker.sock', true) }}"
         ansible_python_interpreter: /usr/bin/python3
       ubuntu2204:
         ansible_connection: community.docker.docker_api
+        ansible_docker_host: "{{ lookup('env', 'DOCKER_HOST') | default('unix:///var/run/docker.sock', true) }}"
         ansible_python_interpreter: /usr/bin/python3
 verifier:
   name: ansible
