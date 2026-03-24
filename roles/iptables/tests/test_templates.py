@@ -223,14 +223,14 @@ class TestIpsetMatchRules:
         assert "-p tcp" in out
         assert "--dports 80,443" in out
 
-    def test_ipset_match_rules_appear_after_open_ports(self, render_v4):
+    def test_ipset_match_rules_appear_before_open_ports(self, render_v4):
         out = render_v4(
             iptables_ipsets=[_ipset("myset", match={"target": "DROP"})],
             iptables_open_ports=[{"port": 22, "proto": "tcp"}],
         )
         port_pos = out.index("--dport 22")
         ipset_pos = out.index("--match-set myset")
-        assert ipset_pos > port_pos
+        assert ipset_pos < port_pos
 
 
 # ---------------------------------------------------------------------------

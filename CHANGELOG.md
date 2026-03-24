@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.0] — 2026-03-23
+
+### Fixed
+- ipset `match:` rules are now injected **before** convenience port rules (`iptables_open_ports`, `iptables_v4_open_ports`, `iptables_v6_open_ports`) in the filter table. Previously the order was reversed, meaning a blocklist `DROP` rule would never fire for ports opened via the convenience variables.
+- The systemd drop-in (`netfilter-persistent.service.d/ipset-first.conf`) is now removed when `iptables_ipsets` is set to an empty list. Previously it persisted as a stale artifact after all ipset definitions were removed.
+
 ## [1.0.0] — 2026-03-02
 
 ### Added

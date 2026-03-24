@@ -14,9 +14,6 @@
 {{ rule }}
 {% endfor %}
 {% if table_name == 'filter' %}
-{% for item in iptables_open_ports + iptables_v4_open_ports %}
--A INPUT -p {{ item.proto }} --dport {{ item.port }} -j ACCEPT
-{% endfor %}
 {% for _set in iptables_ipsets %}
 {% if _set.match is defined %}
 {% set m = _set.match %}
@@ -56,6 +53,9 @@
 {% endfor %}
 {% endif %}
 {% endif %}
+{% endfor %}
+{% for item in iptables_open_ports + iptables_v4_open_ports %}
+-A INPUT -p {{ item.proto }} --dport {{ item.port }} -j ACCEPT
 {% endfor %}
 {% if iptables_log_enable %}
 {% for chain, policy in (table.policies | default({})).items() %}

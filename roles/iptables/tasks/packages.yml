@@ -55,3 +55,10 @@
     mode: "0644"
   when: iptables_ipsets | length > 0 and ansible_facts['os_family'] == 'Debian'
   notify: reload systemd daemon
+
+- name: Remove systemd drop-in when no ipsets are defined
+  ansible.builtin.file:
+    path: /etc/systemd/system/netfilter-persistent.service.d/ipset-first.conf
+    state: absent
+  when: iptables_ipsets | length == 0 and ansible_facts['os_family'] == 'Debian'
+  notify: reload systemd daemon
