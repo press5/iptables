@@ -71,8 +71,6 @@ molecule:
     - cd roles/iptables
     - molecule test
     - molecule test -s no_ipsets
-  tags:
-    - privileged
 
 integration:
   stage: integration
