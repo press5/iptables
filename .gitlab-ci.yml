@@ -67,6 +67,7 @@ molecule:
     DOCKER_TLS_CERTDIR: ""
   before_script:
     - pip install --quiet -r molecule-requirements.txt
+    - ansible-galaxy collection install community.docker -q
   script:
     - cd roles/iptables
     - molecule test
