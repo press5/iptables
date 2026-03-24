@@ -24,6 +24,7 @@ provisioner:
   name: ansible
   env:
     ANSIBLE_ROLES_PATH: "${MOLECULE_PROJECT_DIRECTORY}/.."
+    DOCKER_HOST: "${DOCKER_HOST:-unix:///var/run/docker.sock}"
   inventory:
     host_vars:
       debian12:
