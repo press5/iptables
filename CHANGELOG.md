@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.0] — 2026-03-23
+
+### Added
+- Molecule integration test suite with two scenarios (`default`, `no_ipsets`) covering Debian 12 and Ubuntu 22.04; verifies files written, service state, ipset kernel presence, systemd drop-in lifecycle, idempotency, and that ipset DROP rules precede open-port ACCEPT rules in the live kernel chain
+- Molecule scenarios added to GitHub Actions and GitLab CI pipelines (parallel to the existing native-host integration job)
+- `molecule-requirements.txt` for installing Molecule and the Docker driver
+
+### Tests
+- Added v6 mirrors of all three rule-ordering assertions (`test_open_ports_appear_after_custom_rules`, `test_ipset_match_rules_appear_before_open_ports`, `test_log_rules_appear_after_open_ports_and_ipset`) — previously these only covered the IPv4 template
+- Added `TestExplicitRuleOrdering` class: explicit `table.rules` entries are verified to appear before ipset match rules in both IPv4 and IPv6 output
+
+### Meta
+- Added `namespace: jkl` to `meta/main.yml` to satisfy Galaxy naming requirements (and suppress Molecule prerun validation errors)
+
 ## [1.1.0] — 2026-03-23
 
 ### Fixed

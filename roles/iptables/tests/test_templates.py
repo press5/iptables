@@ -143,6 +143,10 @@ class TestOpenPorts:
         port_pos = out.index("-A INPUT -p tcp --dport 22")
         assert port_pos > custom_pos
 
+    def test_open_ports_appear_after_custom_rules_v6(self, render_v6):
+        out = render_v6(iptables_open_ports=[{"port": 22, "proto": "tcp"}])
+        assert out.index("-A INPUT -i lo") < out.index("-A INPUT -p tcp --dport 22")
+
 
 # ---------------------------------------------------------------------------
 # ipset match rule generation
@@ -232,6 +236,13 @@ class TestIpsetMatchRules:
         ipset_pos = out.index("--match-set myset")
         assert ipset_pos < port_pos
 
+    def test_ipset_match_rules_appear_before_open_ports_v6(self, render_v6):
+        out = render_v6(
+            iptables_ipsets=[_ipset("myset", match={"target": "DROP"})],
+            iptables_open_ports=[{"port": 22, "proto": "tcp"}],
+        )
+        assert out.index("--match-set myset") < out.index("--dport 22")
+
 
 # ---------------------------------------------------------------------------
 # IP version scoping of ipset match rules
@@ -275,6 +286,29 @@ class TestIpsetIpVersionScoping:
         sets = [_ipset("myset", match={"target": "DROP", "ipversion": [6]})]
         assert "--match-set myset" not in render_v4(iptables_ipsets=sets)
         assert "--match-set myset" in render_v6(iptables_ipsets=sets)
+
+
+# ---------------------------------------------------------------------------
+# Explicit rule ordering relative to generated rules
+# ---------------------------------------------------------------------------
+
+
+class TestExplicitRuleOrdering:
+    def test_explicit_rules_appear_before_ipset_match_v4(self, render_v4):
+        tables = {"filter": {**_FILTER_TABLE, "rules": ["-A INPUT -s 10.0.0.1 -j ACCEPT"]}}
+        out = render_v4(
+            iptables_v4_tables=tables,
+            iptables_ipsets=[_ipset("myset", match={"target": "DROP"})],
+        )
+        assert out.index("-s 10.0.0.1") < out.index("--match-set myset")
+
+    def test_explicit_rules_appear_before_ipset_match_v6(self, render_v6):
+        tables = {"filter": {**_FILTER_TABLE, "rules": ["-A INPUT -s ::1 -j ACCEPT"]}}
+        out = render_v6(
+            iptables_v6_tables=tables,
+            iptables_ipsets=[_ipset("myset", match={"target": "DROP"})],
+        )
+        assert out.index("-s ::1") < out.index("--match-set myset")
 
 
 # ---------------------------------------------------------------------------
@@ -394,6 +428,18 @@ class TestDropLogging:
         log_pos = out.index("-j LOG")
         assert log_pos > port_pos
         assert log_pos > ipset_pos
+
+    def test_log_rules_appear_after_open_ports_and_ipset_v6(self, render_v6):
+        out = render_v6(
+            iptables_log_enable=True,
+            iptables_open_ports=[{"port": 22, "proto": "tcp"}],
+            iptables_ipsets=[
+                {"name": "bl", "type": "hash:ip", "entries": [], "match": {"target": "DROP"}}
+            ],
+        )
+        log_pos = out.index("-j LOG")
+        assert out.index("--dport 22") < log_pos
+        assert out.index("--match-set bl") < log_pos
 
     def test_log_absent_when_no_drop_policies(self, render_v4):
         tables = {

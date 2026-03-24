@@ -1,0 +1,61 @@
+---
+- name: Verify
+  hosts: all
+  become: true
+  tasks:
+    - name: rules.v4 exists
+      ansible.builtin.stat:
+        path: /etc/iptables/rules.v4
+      register: v4
+    - ansible.builtin.assert:
+        that: v4.stat.exists
+        fail_msg: "/etc/iptables/rules.v4 was not created"
+
+    - name: rules.v6 exists
+      ansible.builtin.stat:
+        path: /etc/iptables/rules.v6
+      register: v6
+    - ansible.builtin.assert:
+        that: v6.stat.exists
+        fail_msg: "/etc/iptables/rules.v6 was not created"
+
+    - name: netfilter-persistent is enabled
+      ansible.builtin.systemd:
+        name: netfilter-persistent
+      register: svc
+    - ansible.builtin.assert:
+        that: svc.status.UnitFileState == 'enabled'
+        fail_msg: "netfilter-persistent is not enabled (state: {{ svc.status.UnitFileState }})"
+
+    - name: blocklist ipset is loaded in kernel
+      ansible.builtin.command: ipset list blocklist
+      changed_when: false
+
+    - name: 192.0.2.1 is a member of the live blocklist set
+      ansible.builtin.command: ipset test blocklist 192.0.2.1
+      changed_when: false
+
+    - name: systemd drop-in exists when ipsets are defined
+      ansible.builtin.stat:
+        path: /etc/systemd/system/netfilter-persistent.service.d/ipset-first.conf
+      register: dropin
+    - ansible.builtin.assert:
+        that: dropin.stat.exists
+        fail_msg: "drop-in ipset-first.conf is missing despite iptables_ipsets being non-empty"
+
+    - name: Verify blocklist DROP precedes port 22 ACCEPT in kernel
+      ansible.builtin.shell: |
+        set -e
+        rules=$(iptables-save)
+        ipset_line=$(echo "$rules" | grep -n 'match-set blocklist' | cut -d: -f1 | head -1)
+        port_line=$(echo "$rules" | grep -n 'dport 22' | cut -d: -f1 | head -1)
+        test "$ipset_line" -lt "$port_line"
+      changed_when: false
+      failed_when: false
+      register: ordering_check
+    - ansible.builtin.assert:
+        that: ordering_check.rc == 0
+        fail_msg: >
+          Kernel rule ordering violation: --match-set blocklist DROP does not
+          precede --dport 22 ACCEPT in iptables-save output. A blocklisted IP
+          would be accepted on port 22 before the DROP rule fires.

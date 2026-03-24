@@ -1,0 +1,18 @@
+---
+- name: Converge
+  hosts: all
+  become: true
+  roles:
+    - role: iptables
+      vars:
+        iptables_open_ports:
+          - port: 22
+            proto: tcp
+        iptables_ipsets:
+          - name: blocklist
+            type: hash:ip
+            family: inet
+            entries:
+              - 192.0.2.1
+            match:
+              target: DROP

@@ -132,7 +132,9 @@ On RedHat/EL, `iptables` and `ip6tables` are separate services; the role enables
 
 ## Testing
 
-Template unit tests live in `tests/` and exercise the Jinja2 templates directly — no Ansible or target host required.
+### Unit tests
+
+Template unit tests exercise the Jinja2 templates directly — no Ansible or target host required.
 
 ```bash
 cd roles/iptables/tests
@@ -140,7 +142,27 @@ pip install -r requirements.txt
 pytest -v
 ```
 
-The suite covers filter table structure, table render ordering, open-port scoping (v4/v6/both), ipset match rule generation (`--dport`, multiport, `proto: both`, direction, chain, target), IP-version scoping (`family`, `ipversion` override), `ipset.conf` rendering, and drop logging (`iptables_log_enable`, prefix, limit, ordering).
+The suite covers filter table structure, table render ordering, open-port scoping (v4/v6/both), ipset match rule generation (`--dport`, multiport, `proto: both`, direction, chain, target), IP-version scoping (`family`, `ipversion` override), `ipset.conf` rendering, drop logging (`iptables_log_enable`, prefix, limit, ordering), and rule ordering invariants — including that ipset match rules precede convenience port rules — verified for both IPv4 and IPv6.
+
+### Integration tests (Molecule)
+
+Molecule scenarios apply the role against Debian 12 and Ubuntu 22.04 containers and verify end-to-end behaviour: files written to correct paths, `netfilter-persistent` enabled, iptables rules and ipset sets loaded in the kernel, systemd drop-in lifecycle (created when ipsets defined, removed when not), idempotency, and that the ipset DROP rule precedes open-port ACCEPT rules in the live kernel chain.
+
+Two scenarios:
+
+| Scenario | `iptables_ipsets` | Key assertions |
+|---|---|---|
+| `default` | blocklist with one entry | ipset in kernel, drop-in present, DROP precedes ACCEPT in `iptables-save` |
+| `no_ipsets` | `[]` | drop-in absent, no stale sets in kernel |
+
+```bash
+pip install -r molecule-requirements.txt
+cd roles/iptables
+molecule test              # default scenario (Debian 12 + Ubuntu 22.04)
+molecule test -s no_ipsets
+```
+
+Requires Docker with privileged container support (for kernel netfilter access).
 
 ## Example playbook
 
