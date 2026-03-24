@@ -24,8 +24,13 @@ provisioner:
   name: ansible
   env:
     ANSIBLE_ROLES_PATH: "${MOLECULE_PROJECT_DIRECTORY}/.."
-  extra_vars:
-    ansible_connection: community.docker.docker_api
-    ansible_python_interpreter: /usr/bin/python3
+  inventory:
+    host_vars:
+      debian12:
+        ansible_connection: community.docker.docker_api
+        ansible_python_interpreter: /usr/bin/python3
+      ubuntu2204:
+        ansible_connection: community.docker.docker_api
+        ansible_python_interpreter: /usr/bin/python3
 verifier:
   name: ansible
