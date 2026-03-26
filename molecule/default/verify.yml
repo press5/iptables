@@ -47,12 +47,22 @@
         that: iptables_dropin.stat.exists
         fail_msg: "drop-in ipset-first.conf is missing despite iptables_ipsets being non-empty"
 
+    - name: Dump iptables-save for ordering diagnosis
+      ansible.builtin.command: iptables-save
+      register: _iptables_save_dump
+      changed_when: false
+      failed_when: false
+    - name: Show iptables-save output
+      ansible.builtin.debug:
+        var: _iptables_save_dump.stdout_lines
+
     - name: Verify blocklist DROP precedes port 22 ACCEPT in kernel
       ansible.builtin.shell: |
         set -eo pipefail
         rules=$(iptables-save)
         ipset_line=$(echo "$rules" | grep -n 'match-set blocklist' | cut -d: -f1 | head -1)
         port_line=$(echo "$rules" | grep -n 'dport 22' | cut -d: -f1 | head -1)
+        echo "ipset_line=$ipset_line port_line=$port_line"
         test "$ipset_line" -lt "$port_line"
       changed_when: false
       failed_when: false
