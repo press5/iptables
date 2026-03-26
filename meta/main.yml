@@ -1,7 +1,7 @@
 ---
 galaxy_info:
   role_name: iptables
-  namespace: jkl
+  namespace: press5
   author: "jkl <jkl@jkl.dev>"
   description: Manage iptables/ip6tables rules and ipset sets.
   license: MIT
