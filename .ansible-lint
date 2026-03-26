@@ -1,7 +1,7 @@
 profile: basic
 
 exclude_paths:
-  - roles/iptables/tests/
+  - tests/
 
 # shell is used intentionally in ipset_apply_one.yml to build dynamic
 # ipset create commands with optional arguments.

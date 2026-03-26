@@ -24,7 +24,7 @@ jobs:
         run: pip install ansible-core ansible-lint
 
       - name: Run ansible-lint
-        run: ansible-lint roles/iptables
+        run: ansible-lint .
 
   unit-tests:
     name: Unit tests
@@ -38,10 +38,10 @@ jobs:
           cache: pip
 
       - name: Install test dependencies
-        run: pip install -r roles/iptables/tests/requirements.txt
+        run: pip install -r tests/requirements.txt
 
       - name: Run pytest
-        run: pytest roles/iptables/tests/ -v
+        run: pytest tests/ -v
 
   molecule:
     name: Molecule (Debian 12 + Ubuntu 22.04)
@@ -59,10 +59,10 @@ jobs:
         run: pip install -r molecule-requirements.txt
 
       - name: molecule test — default scenario
-        run: cd roles/iptables && molecule test
+        run: molecule test
 
       - name: molecule test — no_ipsets scenario
-        run: cd roles/iptables && molecule test -s no_ipsets
+        run: molecule test -s no_ipsets
 
   integration:
     name: Integration (Ubuntu Noble)

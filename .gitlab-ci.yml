@@ -42,16 +42,16 @@ lint:
     - apt-get install -y --no-install-recommends python3-pip
     - pip3 install --quiet --break-system-packages ansible-core ansible-lint
   script:
-    - ansible-lint roles/iptables
+    - ansible-lint .
 
 unit-tests:
   stage: verify
   before_script:
     - apt-get update -qq
     - apt-get install -y --no-install-recommends python3-pip
-    - pip3 install --quiet --break-system-packages -r roles/iptables/tests/requirements.txt
+    - pip3 install --quiet --break-system-packages -r tests/requirements.txt
   script:
-    - pytest roles/iptables/tests/ -v
+    - pytest tests/ -v
 
 # -- integration ------------------------------------------------------------
 
@@ -73,7 +73,6 @@ molecule:
     - pip install --quiet -r molecule-requirements.txt
     - ansible-galaxy collection install community.docker
   script:
-    - cd roles/iptables
     - molecule test
     - molecule test -s no_ipsets
 
@@ -81,7 +80,7 @@ integration:
   stage: integration
   needs: [lint, unit-tests]
   variables:
-    ANSIBLE_ROLES_PATH: roles
+    ANSIBLE_ROLES_PATH: ..
   before_script:
     - apt-get update -qq
     - apt-get install -y --no-install-recommends python3-pip sudo
