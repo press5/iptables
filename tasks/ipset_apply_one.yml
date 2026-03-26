@@ -1,5 +1,5 @@
 ---
-- name: "Ipset | create tmp set for {{ _ipset.name }}"
+- name: "Ipset | create tmp set for {{ _ipset.name }}" # noqa: command-instead-of-shell
   ansible.builtin.shell: >-
     ipset create -exist {{ _ipset.name }}-tmp
     {{ _ipset.type }}
@@ -21,7 +21,7 @@
     loop_var: entry
   changed_when: false
 
-- name: "Ipset | create live set (if not exists) {{ _ipset.name }}"
+- name: "Ipset | create live set (if not exists) {{ _ipset.name }}" # noqa: command-instead-of-shell
   ansible.builtin.shell: >-
     ipset create -exist {{ _ipset.name }}
     {{ _ipset.type }}

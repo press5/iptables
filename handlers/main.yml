@@ -3,11 +3,13 @@
   ansible.builtin.command: >-
     iptables-restore {{ iptables_v4_rules_path }}
   listen: restore iptables
+  changed_when: true
 
 - name: Restore ip6tables rules
   ansible.builtin.command: >-
     ip6tables-restore {{ iptables_v6_rules_path }}
   listen: restore ip6tables
+  changed_when: true
 
 - name: Restore all netfilter rules
   ansible.builtin.service:
