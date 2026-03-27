@@ -25,7 +25,3 @@
       changed_when: false
       when: ansible_facts['os_family'] == 'Debian'
 
-    - name: Load ip6_tables kernel module (not pre-loaded on some CI kernels)
-      ansible.builtin.command: modprobe ip6_tables
-      changed_when: false
-      when: ansible_facts['os_family'] == 'Debian'

@@ -61,6 +61,9 @@ jobs:
       - name: Install Ansible collections
         run: ansible-galaxy collection install community.docker
 
+      - name: Load ip6_tables kernel module
+        run: sudo modprobe ip6_tables
+
       - name: molecule test — default scenario
         run: molecule test
 
