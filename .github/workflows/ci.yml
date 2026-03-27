@@ -58,6 +58,9 @@ jobs:
       - name: Install Molecule
         run: pip install -r molecule-requirements.txt
 
+      - name: Install Ansible collections
+        run: ansible-galaxy collection install community.docker
+
       - name: molecule test — default scenario
         run: molecule test
 
