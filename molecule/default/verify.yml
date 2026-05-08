@@ -49,6 +49,7 @@
 
     - name: Verify blocklist DROP precedes port 22 ACCEPT in kernel
       ansible.builtin.shell: |
+        set -o pipefail
         rules=$(iptables-save || true)
         ipset_line=$(echo "$rules" | grep -m1 -n 'match-set blocklist' | cut -d: -f1)
         port_line=$(echo "$rules" | grep -m1 -n 'dport 22' | cut -d: -f1)
