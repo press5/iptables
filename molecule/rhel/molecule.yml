@@ -11,7 +11,10 @@ platforms:
     cgroupns_mode: host
     volumes:
       - /sys/fs/cgroup:/sys/fs/cgroup:rw
-    command: /usr/sbin/init
+    tmpfs:
+      - /run
+      - /tmp
+    command: /usr/lib/systemd/systemd
 provisioner:
   name: ansible
   env:
