@@ -1,0 +1,72 @@
+---
+- name: Verify
+  hosts: all
+  become: true
+  tasks:
+    - name: Check /etc/sysconfig/iptables exists
+      ansible.builtin.stat:
+        path: /etc/sysconfig/iptables
+      register: iptables_v4_stat
+    - name: Assert /etc/sysconfig/iptables is present
+      ansible.builtin.assert:
+        that: iptables_v4_stat.stat.exists
+        fail_msg: "/etc/sysconfig/iptables was not created"
+
+    - name: Check /etc/sysconfig/ip6tables exists
+      ansible.builtin.stat:
+        path: /etc/sysconfig/ip6tables
+      register: iptables_v6_stat
+    - name: Assert /etc/sysconfig/ip6tables is present
+      ansible.builtin.assert:
+        that: iptables_v6_stat.stat.exists
+        fail_msg: "/etc/sysconfig/ip6tables was not created"
+
+    - name: Check iptables service state
+      ansible.builtin.systemd:
+        name: iptables
+      register: iptables_svc
+    - name: Assert iptables service is enabled
+      ansible.builtin.assert:
+        that: iptables_svc.status.UnitFileState == 'enabled'
+        fail_msg: "iptables service is not enabled (state: {{ iptables_svc.status.UnitFileState }})"
+
+    - name: Check ip6tables service state
+      ansible.builtin.systemd:
+        name: ip6tables
+      register: ip6tables_svc
+    - name: Assert ip6tables service is enabled
+      ansible.builtin.assert:
+        that: ip6tables_svc.status.UnitFileState == 'enabled'
+        fail_msg: "ip6tables service is not enabled (state: {{ ip6tables_svc.status.UnitFileState }})"
+
+    - name: Verify blocklist ipset is loaded in kernel
+      ansible.builtin.command: ipset list blocklist
+      changed_when: false
+
+    - name: Verify 192.0.2.1 is a member of the live blocklist set
+      ansible.builtin.command: ipset test blocklist 192.0.2.1
+      changed_when: false
+
+    - name: Check systemd drop-in is absent (not needed on RedHat)
+      ansible.builtin.stat:
+        path: /etc/systemd/system/netfilter-persistent.service.d/ipset-first.conf
+      register: iptables_dropin
+    - name: Assert drop-in is absent on RedHat
+      ansible.builtin.assert:
+        that: not iptables_dropin.stat.exists
+        fail_msg: "drop-in ipset-first.conf was created on RedHat — it should not be"
+
+    - name: Verify blocklist DROP precedes port 22 ACCEPT in kernel
+      ansible.builtin.shell: |
+        rules=$(iptables-save || true)
+        ipset_line=$(echo "$rules" | grep -m1 -n 'match-set blocklist' | cut -d: -f1)
+        port_line=$(echo "$rules" | grep -m1 -n 'dport 22' | cut -d: -f1)
+        test -n "$ipset_line" && test -n "$port_line" && test "$ipset_line" -lt "$port_line"
+      changed_when: false
+      register: iptables_ordering_check
+    - name: Assert blocklist DROP precedes port 22 ACCEPT
+      ansible.builtin.assert:
+        that: iptables_ordering_check.rc == 0
+        fail_msg: >
+          Kernel rule ordering violation: --match-set blocklist DROP does not
+          precede --dport 22 ACCEPT in iptables-save output.

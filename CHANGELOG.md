@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.0] — 2026-05-08
+
+### Added
+- Molecule `rhel` scenario: tests role execution on Rocky Linux 9, verifying RHEL-specific paths (`/etc/sysconfig/iptables`, `/etc/sysconfig/ip6tables`), separate `iptables` and `ip6tables` service enablement, ipset kernel presence, and correct rule ordering
+- Rocky Linux 9 molecule scenario added to GitHub Actions and GitLab CI
+- Ubuntu 24.04 and Ubuntu 26.04 added to the `default` and `no_ipsets` molecule platform matrices
+- GHA molecule job now pre-loads `ip_set`, `ip_set_hash_ip`, and `xt_set` kernel modules alongside `ip6_tables` to support both Debian and RHEL scenarios
+
 ## [1.2.0] — 2026-03-23
 
 ### Added

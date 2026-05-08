@@ -75,6 +75,7 @@ molecule:
   script:
     - molecule test
     - molecule test -s no_ipsets
+    - molecule test -s rhel
 
 integration:
   stage: integration
