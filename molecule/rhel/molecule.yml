@@ -23,5 +23,9 @@ provisioner:
     group_vars:
       all:
         ansible_python_interpreter: /usr/bin/python3
+        # RHEL 9's sudo PAM stack includes pam_systemd.so, which fails in
+        # containers because systemd-logind can't register a session. su uses
+        # a different PAM stack (/etc/pam.d/su) that doesn't have this problem.
+        ansible_become_method: su
 verifier:
   name: ansible
