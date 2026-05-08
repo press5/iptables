@@ -1,6 +1,6 @@
 ---
 # Mirrors the GitHub Actions CI: lint and unit-tests run in parallel, then
-# integration runs only if both pass.
+# molecule and integration run in parallel (all need lint + unit-tests to pass).
 #
 # Integration notes:
 #   - Requires a runner with privileged mode for kernel netfilter access
@@ -53,9 +53,9 @@ unit-tests:
   script:
     - pytest tests/ -v
 
-# -- integration ------------------------------------------------------------
+# -- molecule (three parallel jobs, one per scenario) -----------------------
 
-molecule:
+.molecule:
   stage: integration
   needs: [lint, unit-tests]
   tags:
@@ -72,10 +72,23 @@ molecule:
     - apt-get install -y --no-install-recommends docker.io docker-cli
     - pip install --quiet -r molecule-requirements.txt
     - ansible-galaxy collection install community.docker
+
+"molecule / Debian 12, Ubuntu 22.04/24.04/26.04":
+  extends: .molecule
   script:
-    - molecule test
+    - molecule test -s default
+
+"molecule / Debian 12, Ubuntu 22.04/24.04/26.04 (no ipsets)":
+  extends: .molecule
+  script:
     - molecule test -s no_ipsets
+
+"molecule / Rocky Linux 9":
+  extends: .molecule
+  script:
     - molecule test -s rhel
+
+# -- integration ------------------------------------------------------------
 
 integration:
   stage: integration

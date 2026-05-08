@@ -44,9 +44,19 @@ jobs:
         run: pytest tests/ -v
 
   molecule:
-    name: Molecule (Debian 12 + Ubuntu 22.04)
+    name: Molecule / ${{ matrix.name }}
     runs-on: ubuntu-24.04
     needs: [lint, unit-tests]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - scenario: default
+            name: "Debian 12, Ubuntu 22.04/24.04/26.04"
+          - scenario: no_ipsets
+            name: "Debian 12, Ubuntu 22.04/24.04/26.04 (no ipsets)"
+          - scenario: rhel
+            name: Rocky Linux 9
     steps:
       - uses: actions/checkout@v4
 
@@ -64,14 +74,8 @@ jobs:
       - name: Load netfilter kernel modules
         run: sudo modprobe ip6_tables ip_set ip_set_hash_ip xt_set
 
-      - name: molecule test — default scenario
-        run: molecule test
-
-      - name: molecule test — no_ipsets scenario
-        run: molecule test -s no_ipsets
-
-      - name: molecule test — rhel scenario
-        run: molecule test -s rhel
+      - name: Run molecule
+        run: molecule test -s ${{ matrix.scenario }}
 
   integration:
     name: Integration (Ubuntu Noble)
