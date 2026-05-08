@@ -1,8 +1,0 @@
----
-- name: Prepare
-  hosts: all
-  become: true
-  tasks:
-    - name: Update dnf cache
-      ansible.builtin.dnf:
-        update_cache: true
