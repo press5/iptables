@@ -37,6 +37,8 @@ default:
 
 lint:
   stage: verify
+  variables:
+    ANSIBLE_ROLES_PATH: ..
   before_script:
     - apt-get update -qq
     - apt-get install -y --no-install-recommends python3-pip nodejs npm
