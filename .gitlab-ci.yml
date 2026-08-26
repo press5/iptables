@@ -28,7 +28,7 @@ include:
   - template: Security/Secret-Detection.gitlab-ci.yml
 
 variables:
-  SECRET_DETECTION_ENABLED: 'true'
+  SECRET_DETECTION_ENABLED: "true"
 
 default:
   image: ubuntu:24.04
@@ -39,10 +39,11 @@ lint:
   stage: verify
   before_script:
     - apt-get update -qq
-    - apt-get install -y --no-install-recommends python3-pip
+    - apt-get install -y --no-install-recommends python3-pip nodejs npm
     - pip3 install --quiet --break-system-packages ansible-core ansible-lint
   script:
     - ansible-lint .
+    - npx --yes prettier --check '**/*.{yml,yaml}'
 
 unit-tests:
   stage: verify

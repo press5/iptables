@@ -12,8 +12,8 @@
     - role: iptables
       vars:
         iptables_open_ports:
-          - { port: 22, proto: tcp}
-          - { port: 80, proto: tcp}
+          - { port: 22, proto: tcp }
+          - { port: 80, proto: tcp }
           - { port: 443, proto: tcp }
 
         iptables_ipsets:
